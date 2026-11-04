@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c8102e">
+<title>Team Task Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ffffff;--card:#ffffff;--ink:#2a2a2a;--mut:#707070;--acc:#c8102e;--line:#f0d6da;--ok:#2e9e57;--warn:#d99a1c;--bad:#d62828;--info:#3a6ea5;--okbg:#e2f3e8;--warnbg:#fbefd5;--badbg:#fde7e9;--infobg:#e1ecf7;--neu:#fbf0f1;--side:#ffffff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;font-size:9pt}
+h1,h2,h3,h4{font-family:Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;margin:0}
+#app{display:flex;height:100dvh}
+/* sidebar (Slack style) */
+.side{width:252px;flex:none;background:var(--side);color:#e9dccb;overflow-y:auto;padding:14px 0 20px;z-index:30}
+.side .brand{padding:0 16px 10px;font:700 13pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;color:#fff}.side .brand small{display:block;font:500 9pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;color:#b9a891}
+.side h4{font:700 8pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#a99884;padding:14px 16px 4px}
+.side button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;color:#e9dccb;text-align:left;padding:6px 16px;font:500 9pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;cursor:pointer}
+.side button:hover{background:rgba(255,255,255,.07)}.side button.on{background:var(--acc);color:#fff}
+.side button .n{margin-left:auto;font-size:11px;background:rgba(255,255,255,.16);border-radius:999px;padding:1px 7px}
+.hash{width:16px;text-align:center;color:#a99884}.side button.on .hash{color:#fff}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;flex:none;background:#9a8d80}
+.dot.red{background:var(--bad);box-shadow:0 0 0 3px rgba(192,57,43,.25)}.dot.amber{background:var(--warn)}.dot.green{background:var(--ok)}
+.scrim{display:none}
+.pane{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+header{padding:12px 14px 6px;display:flex;align-items:center;gap:10px}
+header h1{font-size:14pt;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header small{color:var(--mut);display:block;font:500 9pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif}
+.menu{display:none}
+main{flex:1;overflow-y:auto;padding:4px 14px 90px;-webkit-overflow-scrolling:touch}
+.fab{position:absolute;right:16px;bottom:22px;width:54px;height:54px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:30px;line-height:1;box-shadow:0 4px 14px rgba(120,50,20,.35);cursor:pointer}
+@media(max-width:820px){
+ .side{position:fixed;left:0;top:0;bottom:0;transform:translateX(-102%);transition:transform .2s;width:272px}
+ .side.open{transform:none}.scrim.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:25}
+ .menu{display:inline-block}}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font:600 9pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);cursor:pointer}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+select,input,textarea{width:100%;font:9pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 11px}
+textarea{min-height:84px;resize:vertical}
+label{display:block;font:600 9pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;color:var(--mut);margin:11px 0 4px}
+.chk{display:flex;align-items:center;gap:8px;font-size:9pt;color:var(--ink);margin:6px 0}.chk input{width:auto}
+.cap{color:var(--mut);font-size:8.5pt;margin:2px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+.kpi b{display:block;font:700 16pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif}.kpi span{font-size:8pt;color:var(--mut);font-weight:600}
+.kpi.ok b{color:var(--ok)}.kpi.bad b{color:var(--bad)}.kpi.acc b{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.card h3{font-size:11pt;margin-bottom:8px}
+.bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:9pt}
+.bar span:first-child{width:128px;flex:none;color:var(--mut)}
+.bar .t{flex:1;background:var(--neu);border-radius:6px;height:14px;overflow:hidden}.bar .t i{display:block;height:100%;background:var(--acc);border-radius:6px}
+.bar b{width:28px;text-align:right}
+.tbl{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:9pt}
+th,td{padding:6px 7px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mut);font-size:11px}th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card)}
+.trend{display:flex;align-items:flex-end;gap:3px;height:90px;padding-top:6px}
+.trend div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:9px;color:var(--mut)}
+.trend i{display:block;width:100%;background:var(--acc);border-radius:3px 3px 0 0;min-height:1px}
+.item{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin:7px 0;font:inherit;color:inherit;cursor:pointer}
+.item .a{display:flex;justify-content:space-between;gap:8px;align-items:center}.item b{font-weight:700}
+.item .s{color:var(--mut);font-size:8.5pt;margin-top:3px}
+.pill{display:inline-block;border-radius:999px;padding:2px 9px;font:700 8pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;background:var(--neu);color:var(--ink);white-space:nowrap}
+.pill.ok{background:var(--okbg);color:#1f7a41}.pill.warn{background:var(--warnbg);color:#9a6a0e}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.info{background:var(--infobg);color:var(--info)}
+.btn{border:0;border-radius:10px;padding:10px 13px;font:700 9pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;background:var(--acc);color:#fff;cursor:pointer}
+.btn.alt{background:var(--card);color:var(--ink);border:1px solid var(--line)}.btn.red{background:var(--bad)}.btn.green{background:var(--ok)}
+.btn[disabled]{opacity:.55}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.btns .btn{flex:1 1 44%}
+.ov{position:fixed;inset:0;background:rgba(43,33,24,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:760px;max-height:92dvh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.sheet h2{font-size:13pt;margin-bottom:2px}
+.x{float:right;border:0;background:var(--neu);border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer}
+.err{color:var(--bad);font-weight:600;font-size:9pt;margin-top:10px;min-height:16px}
+.hide{display:none!important}
+.tl{border-left:2px solid var(--line);margin:6px 0 6px 6px;padding-left:12px}
+.tl .e{margin:0 0 12px;position:relative}.tl .e:before{content:'';position:absolute;left:-18px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--acc)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:9pt}.kv span{color:var(--mut);display:block;font-size:8pt}
+.login{margin:auto;padding:24px;max-width:420px;width:100%}.login h1{font-size:30px;margin-bottom:4px}
+.empty{text-align:center;color:var(--mut);padding:22px 10px}.spin{text-align:center;color:var(--mut);padding:40px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:999px;font-size:9pt;z-index:70}
+a.lnk{color:var(--acc);font-weight:700;text-decoration:none;margin-right:12px}
+/* tasks */
+.task{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--bad);border-radius:12px;padding:11px 12px;margin:8px 0}
+.task.Submitted{border-left-color:var(--warn)}.task.Approved{border-left-color:var(--ok);background:#f3faf5}
+.task .a{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.task b{font-weight:700}
+.task .s{color:var(--mut);font-size:8.5pt;margin-top:3px}
+.advice{background:var(--badbg);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:9pt}
+.note{background:var(--neu);border-radius:8px;padding:7px 10px;margin-top:8px;font-size:9pt}
+.stars{font-size:22px;color:#d99a1c;letter-spacing:2px}.stars .off{color:#d9ccbb}
+.mcard{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0;font:inherit;color:inherit;cursor:pointer}
+.mcard .dot{width:16px;height:16px}.mcard .m{flex:1;min-width:0}.mcard b{font-weight:700}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:8.5pt;color:var(--mut);margin:2px 0 8px}.legend span{display:flex;align-items:center;gap:5px}
+.msg{display:flex;gap:10px;margin:12px 0}.av{width:34px;height:34px;border-radius:8px;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.msg.auto .av{background:#6b5a48}.msg.task .av{background:var(--info)}
+.msg .b{min-width:0}.msg .h{font-size:9pt}.msg .h time{color:var(--mut);font-size:8pt;margin-left:6px}.msg .t{font-size:9pt;word-wrap:break-word}
+.msg .t.link{cursor:pointer;text-decoration:underline dotted}
+.comp{display:flex;gap:8px;padding:8px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--card)}
+.bub{max-width:88%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 11px;margin:8px 0}
+.bub.adm{background:#fbe9dc;border-color:#efcdb6;margin-left:auto}.bub .who{font:700 9pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;color:var(--mut)}.bub .tx{font-size:9pt;word-wrap:break-word;white-space:pre-wrap}
+.chatbtn{position:relative}.chatbtn.ask:after{content:'';position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:var(--bad);border:2px solid #fff}
+.star-pick{display:flex;gap:6px;margin:4px 0}.star-pick label{margin:0}.star-pick input{display:none}
+.star-pick span{display:block;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font:700 10pt Calibri,Carlito,'Segoe UI',Roboto,Arial,sans-serif;cursor:pointer}
+.star-pick input:checked+span{background:var(--warn);color:#fff;border-color:var(--warn)}
+
+h1,h2,h3,h4{color:var(--acc);font-weight:700}
+.side{background:#fff;color:#333;border-right:1px solid var(--line)}
+.side .brand{color:var(--acc)}.side .brand small{color:var(--mut)}
+.side h4{color:var(--acc);opacity:.9}
+.side button{color:#333}.side button:hover{background:#fdf0f2}.side button.on{background:var(--acc);color:#fff}
+.side button .n{background:#fde7e9;color:var(--acc)}.side button.on .n{background:rgba(255,255,255,.25);color:#fff}
+.hash{color:var(--acc)}.side button.on .hash{color:#fff}
+header{border-bottom:1px solid var(--line)}
+label{color:var(--acc)}
+.card,.item,.task,.mcard,.kpi{box-shadow:0 1px 2px rgba(200,16,46,.06)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}.chip{color:var(--acc);border-color:#efc3c9}
+.btn.alt{color:var(--acc);border:1px solid #efc3c9;background:#fff}
+.btn.red{background:#7a0c1a;color:#fff}
+.bub.adm{background:#fde7e9;border-color:#f3bcc3}
+.stars{color:#e0a100}.kpi b{color:var(--acc)}.kpi.ok b{color:var(--ok)}
+.task .s,.item .s{color:var(--mut)}
+.ov{background:rgba(0,0,0,.35)}
+.scrim.open{background:rgba(0,0,0,.35)}
+@media(max-width:820px){.side{box-shadow:4px 0 18px rgba(0,0,0,.15)}}
+</style>
+</head>
+<body>
+<div id="app"><div class="spin" style="margin:auto">Loading…</div></div>
+<script>
+/* ===================== helpers ===================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S = {tab:'team', chan:'chat', member:'', scp:'today', rp:'month', rfrom:'', rto:'', cards:null, feed:[], tasks:[], ratings:[], badges:[],
+  team:[], perms:[], user:null, today:'', users:null, email:'', pin:'', menu:false, slack:null, busy:'', thread:null};
+const can = p => S.perms.indexOf(p) >= 0;
+const isAdmin = () => can('admin');
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }, del(k){ try { localStorage.removeItem(k); } catch(e){} } };
+function addDays(s,n){ const d=new Date(s+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function fdate(s){ return s ? new Date(String(s).slice(0,10)+'T00:00:00Z').toLocaleDateString('en-IN',{day:'2-digit',month:'short',timeZone:'UTC'}) : ''; }
+function periodRange(p, cf, ct){
+  const t = S.today, d = new Date(t+'T00:00:00Z'), dow = (d.getUTCDay()+6)%7;
+  if (p==='today') return [t,t];
+  if (p==='yesterday') { const y=addDays(t,-1); return [y,y]; }
+  if (p==='week') return [addDays(t,-dow), addDays(t,6-dow)];
+  if (p==='month') { const nx=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1)).toISOString().slice(0,10); return [t.slice(0,8)+'01', addDays(nx,-1)]; }
+  if (p==='lastmonth') { const l=addDays(t.slice(0,8)+'01',-1); return [l.slice(0,8)+'01', l]; }
+  return [cf||t, ct||t];
+}
+function call(action, data){
+  return new Promise((res,rej)=>{
+    if (!window.google || !google.script) return rej(new Error('Open this app from its Apps Script web link'));
+    google.script.run
+      .withSuccessHandler(r => r && r.ok ? res(r.data) : rej(new Error(r && r.error || 'No response')))
+      .withFailureHandler(e => rej(new Error(e && e.message || String(e))))
+      .api({action, email:S.email, pin:S.pin, data:data||{}});
+  });
+}
+function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
+function tone(x){
+  if (['Approved'].includes(x)) return 'ok';
+  if (['Pending','Submitted'].includes(x)) return 'warn';
+  if (['Returned'].includes(x)) return 'bad';
+  return '';
+}
+const pill = (x,label,t) => x ? `<span class="pill ${t||tone(x)}">${esc(label||x)}</span>` : '';
+const stars = n => { n=Math.round(Number(n)||0); return `<span class="stars">${'★'.repeat(n)}<span class="off">${'★'.repeat(5-n)}</span></span>`; };
+const BADGE_ICON = {'Star performer':'⭐','Great teamwork':'🤝','Quick turnaround':'⚡','Went the extra mile':'🏆','Quality work':'✅'};
+const perfTone = l => l==='Good performer'?'ok':l==='Needs attention'?'bad':l==='Fair'?'warn':'';
+
+/* dot logic mirrors the server: red = pending/returned, amber = only awaiting review, green = all approved, grey = none */
+function dotOf(name){
+  const mine = S.tasks.filter(t=>t.AssignedTo===name);
+  if (!mine.length) return 'grey';
+  const open = mine.filter(t=>t.Status!=='Approved');
+  if (open.some(t=>t.Status==='Pending'||t.Status==='Returned')) return 'red';
+  return open.length ? 'amber' : 'green';
+}
+const dotHtml = c => `<i class="dot ${c}"></i>`;
+const countOpen = name => S.tasks.filter(t=>t.AssignedTo===name && (t.Status==='Pending'||t.Status==='Returned')).length;
+const asks = name => S.tasks.filter(t=>t.Ask && (!name || t.AssignedTo===name));
+
+/* ===================== data ===================== */
+function applyData(d){
+  S.user=d.user; S.team=d.team; S.today=d.today; S.perms=d.perms; S.tasks=d.tasks||[]; S.ratings=d.ratings||[]; S.badges=d.badges||[]; S.slack=d.slack;
+}
+let cardSeq=0;
+async function loadCards(){
+  const seq=++cardSeq; const [from,to]=periodRange(S.scp);
+  try { const c=await call('scorecard',{from,to}); if(seq!==cardSeq) return; S.cards=c; } catch(e){ toast(e.message); }
+  if (S.tab==='team'||S.tab==='member') render();
+}
+async function loadFeed(silent){
+  try { S.feed=await call('feed',{channel:S.chan}); renderFeed(); } catch(e){ if(!silent) toast(e.message); }
+}
+async function reload(){
+  try { applyData(await call('refresh')); } catch(e){ toast(e.message); }
+  render(); loadCards(); if (S.tab==='chan') loadFeed();
+}
+function setTasks(list){ S.tasks=list; render(); loadCards(); }
+
+/* ===================== login ===================== */
+function loginView(msg){
+  return `<div class="login"><h1>Team Task Tracker</h1><div class="cap">Sign in with your email and PIN</div>
+  <label>Email</label><input id="le" type="email" autocomplete="username" value="${esc(S.email)}">
+  <label>PIN</label><input id="lp" type="password" inputmode="numeric" autocomplete="current-password">
+  <div class="err" id="lerr">${esc(msg||'')}</div>
+  <button class="btn" style="width:100%" data-act="login">Sign in</button></div>`;
+}
+async function doLogin(email,pin,silent){
+  S.email=email.trim().toLowerCase(); S.pin=pin;
+  try {
+    applyData(await call('login'));
+    store.set('ht_cred', JSON.stringify({e:S.email,p:S.pin}));
+    S.tab = isAdmin() ? 'team' : 'member'; S.member=S.user.Name;
+    render(); loadCards();
+  } catch(e){ S.user=null; if (silent) store.del('ht_cred'); $('#app').innerHTML=loginView(e.message); }
+}
+
+/* ===================== shell ===================== */
+function nav(tab, extra){ S.tab=tab; S.menu=false; Object.assign(S, extra||{}); render();
+  if (tab==='team'||tab==='member') loadCards(); if (tab==='chan') loadFeed(); }
+function sideHtml(){
+  const T=S.tab, B=(on,inner,act,attrs)=>`<button class="${on?'on':''}" data-act="${act}" ${attrs||''}>${inner}</button>`;
+  let h=`<div class="brand">Team Task Tracker<small>${esc(S.user.Name)} · ${esc(S.user.Role)}</small></div><h4>Channels</h4>`+
+    B(T==='chan'&&S.chan==='chat','<span class="hash">#</span>team chat','chan','data-v="chat"')+
+    (isAdmin()?B(T==='chan'&&S.chan==='activity','<span class="hash">#</span>activity &amp; alerts','chan','data-v="activity"'):'');
+  if (isAdmin()) {
+    const aq=asks().length;
+    h+=`<h4>Team</h4>`+B(T==='team',`<span class="hash">▦</span>All members${aq?`<span class="n">💬 ${aq}</span>`:''}`,'nav','data-v="team"')+
+      S.team.map(n=>{ const k=countOpen(n), q=asks(n).length;
+        return B(T==='member'&&S.member===n,`${dotHtml(dotOf(n))}${esc(n)}<span class="n">${q?'💬 ':''}${k||''}</span>`,'member',`data-v="${esc(n)}"`); }).join('');
+  } else {
+    const q=asks().length, k=countOpen(S.user.Name);
+    h+=`<h4>My work</h4>`+B(T==='member',`${dotHtml(dotOf(S.user.Name))}My tasks &amp; score<span class="n">${q?'💬 ':''}${k||''}</span>`,'member',`data-v="${esc(S.user.Name)}"`);
+  }
+  h+=`<h4>More</h4>`+(isAdmin()?B(T==='reports','<span class="hash">⇩</span>Reports &amp; export','nav','data-v="reports"'):'')+
+    B(T==='more','<span class="hash">⚙</span>'+(isAdmin()?'Team &amp; settings':'My account'),'nav','data-v="more"');
+  return h;
+}
+function titleOf(){
+  switch(S.tab){ case 'chan': return S.chan==='chat'?'# team chat':'# activity & alerts'; case 'team': return 'Team'; case 'member': return S.member===S.user.Name?'My tasks & score':S.member;
+    case 'reports': return 'Reports & export'; default: return isAdmin()?'Team & settings':'My account'; }
+}
+function render(){
+  if (!S.user) return;
+  const t=S.tab;
+  const body = t==='chan'?chanView():t==='team'?teamView():t==='member'?memberView(S.member):t==='reports'?reportsView():moreView();
+  const fab = isAdmin()&&(t==='team'||t==='member') ? '<button class="fab" data-act="addTask">+</button>' : '';
+  $('#app').innerHTML = `<aside class="side ${S.menu?'open':''}">${sideHtml()}</aside><div class="scrim ${S.menu?'open':''}" data-act="menu"></div>
+    <div class="pane"><header><button class="chip menu" data-act="menu">☰</button><h1>${esc(titleOf())}</h1><button class="chip" data-act="refresh">↻</button></header>
+    <main id="main">${t==='chan'?'':body}</main>${t==='chan'?body:''}${fab}</div>`;
+  if (t==='chan') renderFeed();
+}
+
+/* ===================== team chat / activity feed ===================== */
+function chanView(){
+  const canPost = S.chan==='chat' && can('chat');
+  return `<main id="feedwrap" style="flex:1;overflow-y:auto;padding:4px 14px"><div id="feed"></div></main>
+  ${S.chan==='chat'?`<form class="comp" id="comp"><input id="msg" placeholder="Message the team" autocomplete="off"><button class="btn">Send</button></form>`:''}`;
+}
+function renderFeed(){
+  const el=$('#feed'); if(!el) return; const w=$('#feedwrap');
+  const near = w ? (w.scrollHeight-w.scrollTop-w.clientHeight)<120 : true;
+  el.innerHTML = S.feed.length ? S.feed.map(m=>`<div class="msg ${esc(m.Type)}"><div class="av">${esc((m.User||'?').charAt(0).toUpperCase())}</div><div class="b">
+      <div class="h"><b>${esc(m.User)}</b><time>${fdate(m.Time)} ${esc(String(m.Time).slice(11))}</time></div><div class="t">${esc(m.Text)}</div></div></div>`).join('')
+    : `<div class="empty">${S.chan==='chat'?'No messages yet. Say hello to the team.':'Task events (assigned, submitted, approved, pushed back, questions) appear here and in Slack.'}</div>`;
+  if (near && w) w.scrollTop=w.scrollHeight;
+}
+
+/* ===================== team overview + member page ===================== */
+function periodChips(cur, act){
+  return `<div class="chips">${[['today','Today'],['week','This week'],['month','This month']].map(([k,l])=>`<button class="chip ${cur===k?'on':''}" data-act="${act}" data-v="${k}">${l}</button>`).join('')}</div>`;
+}
+const LEGEND = `<div class="legend"><span>${dotHtml('red')} Pending / pushed back</span><span>${dotHtml('amber')} Waiting for your review</span><span>${dotHtml('green')} All approved</span><span>${dotHtml('grey')} No tasks</span></div>`;
+function teamView(){
+  if (!isAdmin()) return '';
+  const waiting=S.tasks.filter(t=>t.Status==='Submitted'), seenQ={}, qs=asks().filter(t=>{ const k=t.GroupID||t.ID; if(seenQ[k]) return false; seenQ[k]=1; return true; });
+  let h=periodChips(S.scp,'scp')+LEGEND;
+  if (qs.length) h+=`<div class="card" style="border-color:var(--bad)"><h3>💬 ${qs.length} question${qs.length>1?'s':''} waiting for your reply</h3>${qs.slice(0,8).map(t=>`<button class="item" data-act="chat" data-id="${esc(t.ID)}"><div class="a"><b>${esc(t.Title)}</b>${pill('Returned','Reply','bad')}</div><div class="s">${esc(t.AssignedTo)}${t.GroupID?' · team task':''}</div></button>`).join('')}</div>`;
+  if (waiting.length) h+=`<div class="card" style="border-color:var(--warn)"><h3>${waiting.length} waiting for your review</h3>${waiting.slice(0,6).map(t=>`<button class="item" data-act="member" data-v="${esc(t.AssignedTo)}"><div class="a"><b>${esc(t.Title)}</b>${pill('Submitted','Review')}</div><div class="s">${esc(t.AssignedTo)}${t.DoneNote?' · '+esc(t.DoneNote):''}</div></button>`).join('')}</div>`;
+  h+=S.team.length ? S.team.map(n=>{
+    const c=(S.cards||[]).find(x=>x.name===n)||{}; const todayR=S.ratings.find(r=>r.Member===n&&r.Date===S.today);
+    return `<button class="mcard" data-act="member" data-v="${esc(n)}">${dotHtml(dotOf(n))}<div class="m"><b>${esc(n)}</b>${asks(n).length?' 💬':''}
+      <div class="cap" style="margin:2px 0 0">${c.assigned!=null?`${c.approved}/${c.assigned} approved · ${c.pushedBack||0} pushed back · ${c.overdue||0} overdue`:'…'}</div></div>
+      <div style="text-align:right">${todayR&&todayR.Score?stars(todayR.Score):''}<div>${c.label?pill('x',c.label,perfTone(c.label)):''}</div></div></button>`;
+  }).join('') : '<div class="empty">No team members yet.<br><button class="btn" style="margin-top:10px" data-act="nav" data-v="more">Add your team</button></div>';
+  return h;
+}
+function memberView(name){
+  if (!name) return '<div class="empty">Pick a team member</div>';
+  const admin=isAdmin(), me=name===S.user.Name;
+  const c=(S.cards||[]).find(x=>x.name===name);
+  const mine=S.tasks.filter(t=>t.AssignedTo===name);
+  const todayR=S.ratings.find(r=>r.Member===name&&r.Date===S.today);
+  let h=periodChips(S.scp,'scp');
+  h+=`<div class="card"><div style="display:flex;align-items:center;gap:10px">${dotHtml(dotOf(name))}<h3 style="margin:0;flex:1">${esc(name)}</h3>${c&&c.label?pill('x',c.label,perfTone(c.label)):''}</div>
+    ${c?`<div class="grid" style="margin:10px 0 0;grid-template-columns:repeat(5,1fr)"><div class="kpi"><b>${c.assigned}</b><span>Tasks</span></div><div class="kpi ok"><b>${c.approved}</b><span>Approved</span></div><div class="kpi bad"><b>${c.pushedBack}</b><span>Pushed back</span></div><div class="kpi bad"><b>${c.overdue}</b><span>Overdue</span></div><div class="kpi acc"><b>${c.avgRating==null?'–':c.avgRating}</b><span>Rating</span></div></div>`:'<div class="spin">Loading…</div>'}</div>`;
+  h+=`<div class="card"><h3>Today's rating</h3>${todayR?`${todayR.Score?stars(todayR.Score):''} ${todayR.Badge?`<span class="pill ok">${BADGE_ICON[todayR.Badge]||''} ${esc(todayR.Badge)}</span>`:''}${todayR.Note?`<div class="note">${esc(todayR.Note)}</div>`:''}`:`<div class="cap">${admin?'Not rated yet today.':'No rating yet today.'}</div>`}
+    ${admin?`<div class="btns"><button class="btn alt" data-act="rate" data-v="${esc(name)}">${todayR?'Update':'Rate'} today</button></div>`:''}</div>`;
+  if (c && (c.achievements.length||c.errors.length)) h+=`<div class="row"><div class="card"><h3>Achievements</h3>${c.achievements.length?c.achievements.map(a=>`<div class="cap" style="color:var(--ink)">✔ ${esc(a)}</div>`).join(''):'<div class="cap">None yet</div>'}</div>
+    <div class="card"><h3>Errors / to improve</h3>${c.errors.length?c.errors.map(a=>`<div class="cap" style="color:var(--bad)">✖ ${esc(a)}</div>`).join(''):'<div class="cap">None 🎉</div>'}</div></div>`;
+  if (c && c.ratings.length) h+=`<div class="card"><h3>Ratings &amp; appreciation</h3>${c.ratings.slice().reverse().slice(0,8).map(r=>`<div class="cap" style="color:var(--ink)">${fdate(r.date)} ${r.score?stars(r.score):''} ${r.badge?`${BADGE_ICON[r.badge]||''} ${esc(r.badge)}`:''}${r.note?' — '+esc(r.note):''}</div>`).join('')}</div>`;
+  const wait=mine.filter(t=>t.Status==='Submitted'), todo=mine.filter(t=>t.Status==='Pending'||t.Status==='Returned'), done=mine.filter(t=>t.Status==='Approved');
+  const sec=(title,list,empty)=>`<h3 style="margin:14px 0 4px">${title} (${list.length})</h3>${list.length?list.map(taskCard).join(''):`<div class="empty">${empty}</div>`}`;
+  h+=sec(admin?'Waiting for your review':'Waiting for admin review',wait,'Nothing waiting')+sec('To do',todo,me||!admin?'All caught up 🎉':'Nothing pending')+sec('Approved',done.slice(-10).reverse(),'Nothing approved yet');
+  return h;
+}
+function taskCard(t){
+  const admin=isAdmin(), mine=t.AssignedTo===S.user.Name;
+  const od=t.Status!=='Approved'&&t.Due&&t.Due<S.today;
+  const label={Pending:'To do',Returned:'Pushed back',Submitted:admin?'Waiting for review':'Submitted',Approved:'Approved'}[t.Status]||t.Status;
+  const group = admin ? S.tasks.filter(x=>x.GroupID&&x.GroupID===t.GroupID&&x.ID!==t.ID).map(x=>x.AssignedTo+' ('+x.Status.toLowerCase()+')').join(', ') : (t.With||'');
+  const chatLabel = t.GroupID ? 'Team chat' : (admin ? 'Chat' : 'Ask admin');
+  let b=`<button class="btn alt chatbtn ${t.Ask?'ask':''}" data-act="chat" data-id="${esc(t.ID)}">💬 ${chatLabel}${t.Msgs?' ('+t.Msgs+')':''}</button>`;
+  if (mine && (t.Status==='Pending'||t.Status==='Returned')) b=`<button class="btn" data-act="submit" data-id="${esc(t.ID)}">Submit for review</button>`+b;
+  if (admin) {
+    if (t.Status==='Submitted') b=`<button class="btn green" data-act="approve" data-id="${esc(t.ID)}">✔ OK – approve</button><button class="btn red" data-act="pushback" data-id="${esc(t.ID)}">Push back</button>`+b;
+    if (t.Status==='Pending'||t.Status==='Returned') b=`<button class="btn green" data-act="approve" data-id="${esc(t.ID)}">Mark approved</button>`+b;
+    if (t.Status==='Approved') b=`<button class="btn alt" data-act="reopen" data-id="${esc(t.ID)}">Reopen</button>`+b;
+    b+=`<button class="btn alt" data-act="editTask" data-id="${esc(t.ID)}">Edit</button><button class="btn alt" data-act="delTask" data-id="${esc(t.ID)}">Delete</button>`;
+  }
+  return `<div class="task ${esc(t.Status)}"><div class="a"><div><b>${esc(t.Title)}</b>${t.Priority==='High'?' <span class="pill bad">High</span>':''}</div>${pill(t.Status,label)}</div>
+    <div class="s">${admin?esc(t.AssignedTo)+' · ':''}${t.Due?`due ${fdate(t.Due)}${od?' · <b style="color:var(--bad)">overdue</b>':''}`:'no due date'}${t.Repeat&&t.Repeat!=='None'?' · repeats '+esc(t.Repeat.toLowerCase()):''}${t.Returns>0?` · pushed back ${t.Returns}×`:''}</div>
+    ${t.Details?`<div class="s" style="color:var(--ink)">${esc(t.Details)}</div>`:''}
+    ${group?`<div class="s">🤝 Team task with ${esc(group)}</div>`:''}
+    ${t.Status==='Returned'&&t.ReviewNote?`<div class="advice"><b>Advice:</b> ${esc(t.ReviewNote)}</div>`:''}
+    ${t.DoneNote&&t.Status!=='Pending'?`<div class="note"><b>Update:</b> ${esc(t.DoneNote)}</div>`:''}
+    ${t.Status==='Approved'&&t.ReviewNote?`<div class="note"><b>Admin:</b> ${esc(t.ReviewNote)}</div>`:''}
+    <div class="btns" style="margin-bottom:0">${b}</div></div>`;
+}
+
+/* ===================== task chat thread ===================== */
+function renderThread(){
+  const th=S.thread; if(!th) return;
+  const msgs = th.messages.map(m=>`<div class="bub ${m.Role==='Admin'?'adm':''}"><div class="who">${esc(m.User)} · ${fdate(m.Time)} ${esc(String(m.Time).slice(11))}</div><div class="tx">${esc(m.Text)}</div></div>`).join('');
+  openSheet(`<button class="x" data-act="close">×</button><h2>${esc(th.title)}</h2>
+    <div class="cap">${th.shared?'🤝 Team task – chat between the admin and '+esc(th.people.join(', ')):'Private chat between the admin and '+esc(th.people[0])}</div>
+    <div id="tmsgs" style="max-height:48dvh;overflow-y:auto;padding:2px 0">${msgs||'<div class="empty">No messages yet. Ask your question here.</div>'}</div>
+    <form id="tform" class="comp" style="padding:8px 0 0;border:0;background:none"><input id="tmsg" placeholder="${isAdmin()?'Reply…':'Ask a question…'}" autocomplete="off"><button class="btn">Send</button></form>`);
+  const el=$('#tmsgs'); if(el) el.scrollTop=el.scrollHeight;
+}
+async function openThread(id){
+  try { S.thread=Object.assign(await call('thread',{ID:id}),{id}); renderThread(); const i=$('#tmsg'); if(i) i.focus(); }
+  catch(e){ toast(e.message); }
+}
+
+/* ===================== reports ===================== */
+function reportsView(){
+  const P=[['today','Today'],['week','This week'],['month','This month'],['lastmonth','Last month'],['custom','Custom']];
+  const [from,to]=periodRange(S.rp,S.rfrom,S.rto);
+  return `<div class="cap">Pull everything for a period into one file: team scorecard, every task, and daily ratings. Members who have left are still included for the dates they worked.</div>
+  <div class="chips">${P.map(([k,l])=>`<button class="chip ${S.rp===k?'on':''}" data-act="rp" data-v="${k}">${l}</button>`).join('')}</div>
+  ${S.rp==='custom'?`<div class="row"><input type="date" value="${esc(S.rfrom||S.today)}" data-f="rfrom"><input type="date" value="${esc(S.rto||S.today)}" data-f="rto"></div>`:''}
+  <div class="cap" style="margin-top:8px">${fdate(from)}${to!==from?' – '+fdate(to):''}</div>
+  <div class="card"><h3>Download</h3><div class="btns">
+   <button class="btn" data-act="repX">Excel report</button><button class="btn" data-act="repP">PowerPoint report</button>
+   <button class="btn alt" data-act="mailX">E-mail me full tracker (Excel)</button></div>
+   <div class="cap">${esc(S.busy)||'Excel and PowerPoint take about 10–20 seconds to prepare.'}</div></div>`;
+}
+function saveFile(b64,name,mime){
+  const bin=atob(b64), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  const url=URL.createObjectURL(new Blob([u],{type:mime||'application/octet-stream'})); const a=document.createElement('a');
+  a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{a.remove();URL.revokeObjectURL(url);},4000);
+}
+async function makeReport(kind){
+  const [from,to]=periodRange(S.rp,S.rfrom,S.rto); S.busy='Preparing your file…'; render();
+  try { const f=await call(kind==='x'?'reportXlsx':'reportPptx',{from,to});
+    saveFile(f.b64,f.name,kind==='x'?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    S.busy='Done – check your downloads.'; }
+  catch(e){ S.busy='Failed: '+e.message; }
+  render();
+}
+
+/* ===================== team management + settings ===================== */
+function moreView(){
+  let h=`<div class="card"><h3>My account</h3><div class="cap">${esc(S.user.Email)}</div><div class="btns"><button class="btn alt" data-act="pin">Change PIN</button><button class="btn alt" data-act="logout">Sign out</button></div></div>`;
+  if (isAdmin()) {
+    const active=(S.users||[]).filter(u=>u.Active!=='N'), gone=(S.users||[]).filter(u=>u.Active==='N');
+    const row=u=>`<button class="item" data-act="user" data-email="${esc(u.Email)}"><div class="a"><b>${esc(u.Name)}</b><span class="pill ${u.Active==='N'?'bad':u.Role==='Admin'?'info':'ok'}">${u.Active==='N'?'Removed':esc(u.Role)}</span></div><div class="s">${esc(u.Email)}${u.Digest==='Y'?' · gets e-mail summaries':''}</div></button>`;
+    h+=`<div class="card"><h3>Team members</h3><div class="cap">Tap a person to rename, reset their PIN, remove or restore them.</div>${S.users?active.map(row).join(''):'<div class="spin">Loading…</div>'}
+      <div class="btns"><button class="btn" data-act="user" data-email="">+ Add team member</button></div></div>`;
+    if (gone.length) h+=`<div class="card"><h3>Removed (history kept)</h3>${gone.map(row).join('')}</div>`;
+    h+=`<div class="card"><h3>Slack alerts</h3><div class="cap">${S.slack?'Connected – task events and questions are posted to your Slack channel.':'Not connected. Paste a Slack Incoming Webhook URL to get alerts in a Slack channel.'}</div><div class="btns"><button class="btn alt" data-act="slack">${S.slack?'Change / disconnect':'Connect Slack'}</button></div></div>`;
+    if (!S.users) call('listUsers').then(u=>{ S.users=u; if(S.tab==='more') render(); }).catch(e=>toast(e.message));
+  }
+  return h;
+}
+
+/* ===================== sheets + forms ===================== */
+function openSheet(html){ closeSheet(); const o=document.createElement('div'); o.className='ov'; o.id='ov'; o.innerHTML=`<div class="sheet">${html}</div>`; document.body.appendChild(o); o.addEventListener('click',e=>{ if(e.target===o) closeSheet(); }); }
+function closeSheet(){ const o=$('#ov'); if(o) o.remove(); S.thread=null; }
+function ask(msg,yes){ return new Promise(res=>{ openSheet(`<h2>Please confirm</h2><p>${esc(msg)}</p><div class="btns"><button class="btn alt" id="no">Cancel</button><button class="btn" id="yes">${esc(yes||'Yes')}</button></div>`); $('#no').onclick=()=>{closeSheet();res(false);}; $('#yes').onclick=()=>{closeSheet();res(true);}; }); }
+function fieldHtml(f){
+  const v=f.v==null?'':f.v; const show=f.show?` data-sn="${f.show[0]}" data-sv="${esc(f.show[1].join('|'))}"`:''; let inp;
+  if (f.t==='select') inp=`<select name="${f.n}"><option value="">Select…</option>${f.opts.map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  else if (f.t==='textarea') inp=`<textarea name="${f.n}">${esc(v)}</textarea>`;
+  else if (f.t==='info') return `<div class="f"><div class="cap">${esc(f.l)}</div></div>`;
+  else if (f.t==='multi') inp=f.opts.map(o=>`<label class="chk"><input type="checkbox" data-multi="${f.n}" value="${esc(o)}" ${[].concat(f.v||[]).includes(o)?'checked':''}> ${esc(o)}</label>`).join('')||'<div class="cap">No team members yet – add them in Team &amp; settings.</div>';
+  else if (f.t==='stars') inp=`<div class="star-pick">${['1','2','3','4','5'].map(n=>`<label><input type="radio" name="${f.n}" value="${n}" ${String(f.v)===n?'checked':''}><span>${n} ★</span></label>`).join('')}</div>`;
+  else inp=`<input name="${f.n}" type="${f.t||'text'}" value="${esc(v)}" ${f.ro?'readonly':''}>`;
+  return `<div class="f"${show}><label>${esc(f.l)}${f.req?' *':''}</label>${inp}</div>`;
+}
+function openForm(cfg){
+  openSheet(`<button class="x" data-act="close">×</button><h2>${esc(cfg.title)}</h2>${cfg.sub?`<div class="cap">${esc(cfg.sub)}</div>`:''}<form id="frm" novalidate>${cfg.fields.map(fieldHtml).join('')}<div class="err" id="ferr"></div><div class="btns"><button type="button" class="btn alt" data-act="close">Cancel</button><button type="submit" class="btn ${cfg.cls||''}" id="fsave">${esc(cfg.submit||'Save')}</button></div></form>`);
+  const frm=$('#frm');
+  const vis=()=>{ frm.querySelectorAll('.f[data-sn]').forEach(w=>{ const el=frm.elements[w.dataset.sn]; w.classList.toggle('hide',!(el&&w.dataset.sv.split('|').includes(el.value))); }); };
+  frm.addEventListener('change',vis); vis();
+  frm.addEventListener('submit',async e=>{
+    e.preventDefault(); const vals={}; let err='';
+    cfg.fields.forEach(f=>{
+      if (f.t==='info') return;
+      if (f.t==='multi') { vals[f.n]=[...frm.querySelectorAll(`[data-multi="${f.n}"]:checked`)].map(x=>x.value); if(f.req&&!vals[f.n].length&&!err) err=f.l+' – pick at least one'; return; }
+      if (f.t==='stars') { const r=frm.querySelector(`[name="${f.n}"]:checked`); vals[f.n]=r?r.value:''; return; }
+      const w=frm.elements[f.n]; if(!w) return; if (w.closest('.f').classList.contains('hide')) return;
+      vals[f.n]=w.value.trim(); if(f.req&&!vals[f.n]&&!err) err=f.l+' is required';
+    });
+    const eb=$('#ferr'); if(err){ eb.textContent=err; return; }
+    const btn=$('#fsave'); btn.disabled=true; btn.textContent='Saving…'; eb.textContent='';
+    try { await cfg.onSubmit(vals); } catch(x){ eb.textContent=x.message; btn.disabled=false; btn.textContent=cfg.submit||'Save'; }
+  });
+}
+
+/* ----- task forms ----- */
+function taskForm(t, preset){
+  t=t||{};
+  const fields=[{n:'Title',l:'Task',v:t.Title,req:1}, {n:'Details',l:'Details / instructions',t:'textarea',v:t.Details},
+    t.ID ? {n:'AssignedTo',l:'Assigned to',t:'select',opts:S.team,v:t.AssignedTo,req:1}
+         : {n:'AssignedTo',l:'Assign to (tick one, or 2–3 for a shared team task)',t:'multi',opts:S.team,v:preset?[preset]:[],req:1},
+    {n:'Due',l:'Due date',t:'date',v:t.Due||S.today}, {n:'Priority',l:'Priority',t:'select',opts:['High','Normal','Low'],v:t.Priority||'Normal'},
+    {n:'Repeat',l:'Repeat',t:'select',opts:['None','Daily','Weekly'],v:t.Repeat||'None'}];
+  openForm({title:t.ID?'Edit task':'Assign task',submit:t.ID?'Save':'Assign',fields,
+    onSubmit:async v=>{ if(t.ID) v.ID=t.ID; setTasks(await call('saveTask',v)); closeSheet(); toast(t.ID?'Saved':'Task sent'); }});
+}
+function submitForm(t){ openForm({title:'Submit for review',sub:t.Title,submit:'Submit',fields:[{n:'Note',l:'What did you do? (optional)',t:'textarea'}],
+  onSubmit:async v=>{ v.ID=t.ID; setTasks(await call('submitTask',v)); closeSheet(); toast('Sent for review'); }}); }
+function pushForm(t){ openForm({title:'Push back with advice',sub:t.AssignedTo+' · '+t.Title,submit:'Push back',cls:'red',fields:[{n:'Note',l:'Your advice – what should be fixed?',t:'textarea',req:1}],
+  onSubmit:async v=>{ v.ID=t.ID; v.Decision='return'; setTasks(await call('reviewTask',v)); closeSheet(); toast('Pushed back'); }}); }
+async function review(id,decision){ try { setTasks(await call('reviewTask',{ID:id,Decision:decision})); toast(decision==='approve'?'Approved – now green':'Reopened'); } catch(e){ toast(e.message); } }
+function rateForm(name){
+  const r=S.ratings.find(x=>x.Member===name&&x.Date===S.today)||{};
+  openForm({title:'Rate '+name,sub:'Today – '+fdate(S.today),fields:[{n:'Score',l:'Daily score (optional)',t:'stars',v:r.Score},
+    {n:'Badge',l:'Appreciation badge (optional)',t:'select',opts:S.badges,v:r.Badge},{n:'Note',l:'Note for '+name,t:'textarea',v:r.Note}],
+    onSubmit:async v=>{ v.Member=name; S.ratings=await call('rateMember',v); closeSheet(); toast('Saved'); render(); loadCards(); }});
+}
+
+/* ----- team management ----- */
+function userSheet(email){
+  const u=(S.users||[]).find(x=>x.Email===email); if(!u) return;
+  const self=u.Email.toLowerCase()===S.user.Email.toLowerCase();
+  const open=S.tasks.filter(t=>t.AssignedTo===u.Name&&t.Status!=='Approved').length;
+  openSheet(`<button class="x" data-act="close">×</button><h2>${esc(u.Name)}</h2><div class="cap">${esc(u.Email)} · ${u.Active==='N'?'Removed':esc(u.Role)}${u.Role==='Member'&&u.Active!=='N'?' · '+open+' open task(s)':''}</div>
+    <div class="btns"><button class="btn alt" data-act="userEdit" data-email="${esc(email)}">Rename / edit / reset PIN</button>
+    ${self?'':(u.Active==='N'?`<button class="btn green" data-act="userRestore" data-email="${esc(email)}">Restore to team</button>`:`<button class="btn red" data-act="userRemove" data-email="${esc(email)}">Remove from team</button>`)}</div>
+    <div class="cap">Removing keeps all past tasks, ratings and chats so your reports stay complete. The person just loses access.</div>`);
+}
+function userForm(email){
+  const u=(S.users||[]).find(x=>x.Email===email)||{};
+  openForm({title:email?'Edit '+u.Name:'Add team member',sub:email?'Changing the name updates it on all their tasks, ratings and chats.':'',fields:[
+    {n:'Name',l:'Name (shown on the team tabs)',v:u.Name,req:1},{n:'Email',l:'Email',t:'email',v:u.Email,req:1,ro:!!email},
+    {n:'Role',l:'Role',t:'select',opts:['Member','Admin'],v:u.Role||'Member',req:1},{n:'pin',l:email?'New PIN (leave blank to keep)':'PIN (4–8 digits)',t:'password',req:!email},
+    {n:'Digest',l:'Gets e-mail summaries',t:'select',opts:['Y','N'],v:u.Digest||'N',req:1}],
+    onSubmit:async v=>{ v.Active=u.Active==='N'?'N':'Y'; S.users=await call('saveUser',v); applyData(await call('refresh')); closeSheet(); toast('Saved'); render(); loadCards(); }});
+}
+function removeForm(email){
+  const u=(S.users||[]).find(x=>x.Email===email); const open=S.tasks.filter(t=>t.AssignedTo===u.Name&&t.Status!=='Approved').length;
+  const others=S.team.filter(n=>n!==u.Name);
+  openForm({title:'Remove '+u.Name+'?',submit:'Remove from team',cls:'red',fields:[
+    open?{n:'ReassignTo',l:u.Name+' has '+open+' open task(s). Give them to',t:'select',opts:others,req:1}:{t:'info',l:u.Name+' has no open tasks.'},
+    {t:'info',l:'They will lose access. Past tasks, ratings and chats stay in your reports.'}],
+    onSubmit:async v=>{ S.users=await call('removeMember',{Email:email,ReassignTo:v.ReassignTo||''}); applyData(await call('refresh')); closeSheet(); toast('Removed'); render(); loadCards(); }});
+}
+async function restoreUser(email){
+  const u=S.users.find(x=>x.Email===email);
+  try { S.users=await call('saveUser',{Email:u.Email,Name:u.Name,Role:u.Role,Active:'Y',Digest:u.Digest}); applyData(await call('refresh')); closeSheet(); toast('Restored'); render(); loadCards(); } catch(e){ toast(e.message); }
+}
+function pinForm(){ openForm({title:'Change PIN',fields:[{n:'newPin',l:'New PIN (4–8 digits)',t:'password',req:1}],onSubmit:async v=>{ await call('changePin',v); S.pin=v.newPin; store.set('ht_cred',JSON.stringify({e:S.email,p:S.pin})); closeSheet(); toast('PIN changed'); }}); }
+function slackForm(){ openForm({title:'Slack alerts',sub:'Slack → Apps → Incoming Webhooks → Add to a channel → copy the URL. Leave blank to disconnect.',fields:[{n:'url',l:'Webhook URL',t:'text'}],
+  onSubmit:async v=>{ const r=await call('saveSlack',v); S.slack=r.connected; closeSheet(); toast(r.connected?'Slack connected':'Slack disconnected'); render(); }}); }
+
+/* ===================== events ===================== */
+const byTask = id => S.tasks.find(x=>x.ID===id);
+const ACT = {
+  login:()=>doLogin($('#le').value,$('#lp').value),
+  menu:()=>{ S.menu=!S.menu; render(); },
+  nav:d=>nav(d.v), chan:d=>nav('chan',{chan:d.v,feed:[]}), member:d=>nav('member',{member:d.v}),
+  scp:d=>{ S.scp=d.v; S.cards=null; render(); loadCards(); }, rp:d=>{ S.rp=d.v; render(); },
+  refresh:()=>{ toast('Refreshing…'); reload(); }, close:()=>closeSheet(),
+  addTask:()=>taskForm(null, S.tab==='member'&&S.member!==S.user.Name?S.member:''), editTask:d=>taskForm(byTask(d.id)),
+  delTask:async d=>{ const t=byTask(d.id); if(!await ask(`Delete task "${t.Title}"?`,'Delete')) return; try { setTasks(await call('deleteTask',{ID:d.id})); } catch(e){ toast(e.message); } },
+  submit:d=>submitForm(byTask(d.id)), approve:d=>review(d.id,'approve'), reopen:d=>review(d.id,'reopen'), pushback:d=>pushForm(byTask(d.id)),
+  chat:d=>openThread(d.id), rate:d=>rateForm(d.v),
+  repX:()=>makeReport('x'), repP:()=>makeReport('p'),
+  mailX:async()=>{ S.busy='Sending…'; render(); try { const r=await call('exportMail'); S.busy='Sent to '+r.sentTo; } catch(e){ S.busy='Failed: '+e.message; } render(); },
+  user:d=>d.email?userSheet(d.email):userForm(''), userEdit:d=>userForm(d.email), userRemove:d=>removeForm(d.email), userRestore:d=>restoreUser(d.email),
+  pin:()=>pinForm(), slack:()=>slackForm(),
+  logout:()=>{ store.del('ht_cred'); S.user=null; S.pin=''; S.users=null; $('#app').innerHTML=loginView(); }
+};
+document.addEventListener('click',e=>{ const t=e.target.closest('[data-act]'); if(!t) return; const f=ACT[t.dataset.act]; if(f) f(t.dataset); });
+document.addEventListener('change',e=>{ const k=e.target.dataset&&e.target.dataset.f; if(!k) return; S[k]=e.target.value; if (k==='rfrom'||k==='rto') render(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='lp') ACT.login(); });
+document.addEventListener('submit',async e=>{
+  if (e.target.id==='comp') { e.preventDefault(); const i=$('#msg'), text=i.value.trim(); if(!text) return; i.value='';
+    try { S.feed=await call('postMsg',{text}); renderFeed(); const w=$('#feedwrap'); if(w) w.scrollTop=w.scrollHeight; } catch(x){ toast(x.message); i.value=text; } }
+  if (e.target.id==='tform') { e.preventDefault(); const i=$('#tmsg'), text=i.value.trim(); if(!text||!S.thread) return; const id=S.thread.id; i.value='';
+    try { S.thread=Object.assign(await call('threadPost',{ID:id,text}),{id}); renderThread(); const n=$('#tmsg'); if(n) n.focus();
+      call('tasks').then(t=>{ S.tasks=t; render(); }).catch(()=>{}); } catch(x){ toast(x.message); i.value=text; } }
+});
+
+/* live refresh every 40 s: tasks (and badges), scorecards, open chat */
+setInterval(async()=>{
+  if (!S.user||document.hidden||$('#ov')) return;
+  try { S.tasks=await call('tasks'); } catch(e){ return; }
+  if (S.tab==='chan') { loadFeed(true); const s=$('.side'); if(s) s.innerHTML=sideHtml(); }
+  else if (S.tab==='team'||S.tab==='member') { render(); loadCards(); }
+},40000);
+
+(function boot(){
+  let cred=null; try { cred=JSON.parse(store.get('ht_cred')||'null'); } catch(e){}
+  if (cred&&cred.e) { S.email=cred.e; doLogin(cred.e,cred.p,true); } else $('#app').innerHTML=loginView();
+})();
+</script>
+</body>
+</html>
